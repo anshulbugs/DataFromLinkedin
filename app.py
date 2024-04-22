@@ -25,7 +25,7 @@ def process_csv():
         return 'Error: The CSV file does not have a "LinkedIn Profile" column.', 400
 
     # Open a new CSV file for writing with UTF-8 encoding
-    with codecs.open('processed_data.csv', 'w', encoding='utf-8') as csvfile:
+    with codecs.open('processed_data.csv', 'w', encoding='utf-8', newline='') as csvfile:
         fieldnames = df.columns.tolist() + ['emailsApi', 'phoneNumbersApi']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -35,13 +35,13 @@ def process_csv():
             try:
                 start_time = time.time()
                 api_url = f'https://pulse.aptask.com/api/2.0/linkedin/get-details-from-linkedin-url?linkedInUrl={url}'
-                response = requests.get(api_url).json()
-                end_time = time.time()
-                time_taken = end_time - start_time
-                print("API call took", time_taken, "seconds")
+                response = requests.get(api_url, stream=True)  # Enable streaming
+                response.raise_for_status()  # Raise an exception for non-2xx status codes
 
-                email_str = ', '.join(response.get('emails', []))
-                phone_number_str = ', '.join(response.get('phoneNumbers', []))
+                # Process the streamed response
+                response_data = response.json()
+                email_str = ', '.join(response_data.get('emails', []))
+                phone_number_str = ', '.join(response_data.get('phoneNumbers', []))
 
                 row['emailsApi'] = email_str
                 row['phoneNumbersApi'] = phone_number_str
@@ -49,6 +49,10 @@ def process_csv():
                 # Convert the row to a dictionary of strings
                 row_dict = {col: str(value) for col, value in row.items()}
                 writer.writerow(row_dict)
+
+                end_time = time.time()
+                time_taken = end_time - start_time
+                print("API call took", time_taken, "seconds")
             except Exception as e:
                 print(f'Error fetching details for {url}: {e}')
                 # Write the row with empty email and phone number fields
@@ -58,9 +62,6 @@ def process_csv():
                 # Convert the row to a dictionary of strings
                 row_dict = {col: str(value) for col, value in row.items()}
                 writer.writerow(row_dict)
-
-            # Clear the response object to free up memory
-            response = None
 
     # Send the CSV file as a response
     with codecs.open('processed_data.csv', 'r', encoding='utf-8') as csvfile:
