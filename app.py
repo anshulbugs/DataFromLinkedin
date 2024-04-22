@@ -9,16 +9,23 @@ import csv
 import codecs
 
 app = Flask(__name__)
+
+# Initialize a variable to store the cumulative memory usage
+cumulative_memory_usage = 0
+
 def get_process_memory():
     process = psutil.Process(os.getpid())
     mem_info = process.memory_info()
     return mem_info.rss / (1024 ** 2) 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/process_csv', methods=['POST'])
 def process_csv():
+    global cumulative_memory_usage  # Use the global variable
+
     # Get the uploaded CSV file
     csv_file = request.files['file']
 
@@ -58,7 +65,10 @@ def process_csv():
                 end_time = time.time()
                 time_taken = end_time - start_time
                 print("API call took", time_taken, "seconds")
-                print(f"Memory usage after API call: {get_process_memory()} MB")
+                
+                # Update cumulative memory usage
+                cumulative_memory_usage += get_process_memory()
+                print(f"Cumulative memory usage: {cumulative_memory_usage} MB")
             except Exception as e:
                 print(f'Error fetching details for {url}: {e}')
                 # Write the row with empty email and phone number fields
