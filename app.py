@@ -25,9 +25,9 @@ def process_csv():
         return 'Error: The CSV file does not have a "LinkedIn Profile" column.', 400
 
     # Open a new CSV file for writing with UTF-8 encoding
-    with codecs.open('processed_data.csv', 'w', encoding='utf-8', newline='') as csvfile:
+    with codecs.open('processed_data.csv', 'w', encoding='utf-8') as csvfile:
         fieldnames = df.columns.tolist() + ['emailsApi', 'phoneNumbersApi']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n')
         writer.writeheader()
 
         for index, row in df.iterrows():
